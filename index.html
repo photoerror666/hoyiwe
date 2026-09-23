@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>何意味</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      user-select: none;
+    }
+
+    /* Icon 標題 */
+    .icon-header {
+      width: 100px;
+      height: 100px;
+      border: 2px solid #fff;
+      border-radius: 16px;
+      margin-bottom: 30px;
+      overflow: hidden;
+    }
+    .icon-header img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* 按鈕區域 */
+    .btn-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      width: 100%;
+      max-width: 280px;
+    }
+
+    .btn {
+      background: #000;
+      color: #fff;
+      border: 2px solid #fff;
+      border-radius: 12px;
+      padding: 15px 20px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: center;
+      transition: transform 0.1s, background-color 0.1s, box-shadow 0.1s;
+      outline: none;
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+      background-color: #222;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+
+    /* 滑桿區域 (預設隱藏) */
+    .slider-box {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 15px;
+      padding: 15px;
+      border: 1px dashed #666;
+      border-radius: 10px;
+      width: 100%;
+      background-color: #111;
+    }
+    .slider-box input[type=range] {
+      width: 100%;
+      accent-color: #fff;
+      margin-top: 10px;
+    }
+
+    /* 通用彈窗樣式 */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-box {
+      background: #111;
+      border: 2px solid #fff;
+      border-radius: 16px;
+      padding: 24px;
+      width: 80%;
+      max-width: 300px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+    }
+
+    .modal-title {
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+
+    .modal-body {
+      font-size: 1rem;
+      color: #ccc;
+      margin-bottom: 20px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .modal-btn {
+      background: #fff;
+      color: #000;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      flex: 1;
+    }
+
+    .modal-btn.secondary {
+      background: #000;
+      color: #fff;
+      border: 1px solid #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 手繪 Icon 標頭 -->
+  <div class="icon-header">
+    <img src="icon.png" alt="何意味">
+  </div>
+
+  <!-- 功能按鈕群 -->
+  <div class="btn-container">
+    <button class="btn" onclick="openPopup1()">叫出彈窗</button>
+
+    <button class="btn" onclick="toggleSlider()">玩滑桿</button>
+    <!-- 滑桿容器 -->
+    <div class="slider-box" id="sliderBox">
+      <span id="sliderValue">50%</span>
+      <input type="range" min="0" max="100" value="50" oninput="updateSlider(this.value)">
+    </div>
+
+    <button class="btn" onclick="openClockPopup()">報時</button>
+
+    <!-- 第四個按鈕：只有 CSS 動畫反應，沒有任何 JavaScript 邏輯 -->
+    <button class="btn">何意味</button>
+  </div>
+
+  <!-- 彈窗 1：叫出彈窗 -->
+  <div class="modal-overlay" id="popup1">
+    <div class="modal-box">
+      <div class="modal-title">這是彈窗</div>
+      <div class="modal-body">沒什麼用的彈窗</div>
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="closePopup('popup1')">關閉</button>
+        <button class="modal-btn" onclick="closePopup('popup1')">何意味</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈窗 2：報時 -->
+  <div class="modal-overlay" id="popupClock">
+    <div class="modal-box">
+      <div class="modal-title">報時</div>
+      <div class="modal-body" id="clockText">現在是 00:00</div>
+      <div class="modal-actions">
+        <button class="modal-btn" onclick="closePopup('popupClock')">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 註冊 Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+
+    // 1. 叫出第一個彈窗
+    function openPopup1() {
+      document.getElementById('popup1').style.display = 'flex';
+    }
+
+    // 2. 切換滑桿顯示 / 更新數值
+    function toggleSlider() {
+      const sliderBox = document.getElementById('sliderBox');
+      if (sliderBox.style.display === 'flex') {
+        sliderBox.style.display = 'none';
+      } else {
+        sliderBox.style.display = 'flex';
+      }
+    }
+
+    function updateSlider(val) {
+      document.getElementById('sliderValue').innerText = val + '%';
+    }
+
+    // 3. 報時彈窗
+    function openClockPopup() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      document.getElementById('clockText').innerText = `現在是 ${hours}:${minutes}`;
+      document.getElementById('popupClock').style.display = 'flex';
+    }
+
+    // 通用關閉彈窗
+    function closePopup(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+  </script>
+</body>
+</html>
